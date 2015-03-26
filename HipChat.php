@@ -188,20 +188,23 @@ class HipChatPlugin extends MantisPlugin {
     function notify($msg, $room) {
         $ch = curl_init();
         // @see https://www.hipchat.com/docs/api/method/rooms/message
-        $url = sprintf('https://api.hipchat.com/v1/rooms/message?auth_token=%s', plugin_config_get('token'));
+        $url = sprintf('https://api.hipchat.com/v2/room/%s/notification?auth_token=%s',$room, plugin_config_get('token'));
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 1);
         $payload = array(
-            'room_id' => $room,
-            'from' => plugin_config_get('bot_name'),
             'message' => $msg,
-            'message_format' => 'text',
-            'notify' => plugin_config_get('notify'),
+            'notify' => (boolean)plugin_config_get('notify'),
             'color' => plugin_config_get('color'),
-            'format' => 'json',
         );
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        $headers = array(
+        'Content-Type: application/json'
+        );
+        $data = json_encode($payload);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         $result = curl_exec($ch);
         curl_close($ch);
     }
